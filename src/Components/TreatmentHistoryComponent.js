@@ -1,10 +1,8 @@
-import React, { Component } from "react";
+import React,{Component} from "react";
 import moment from "moment";
 import "./HistoryComp.css";
 
-const ETHER = 1000000000000000000;
-
-function AllEventrender({ treatEv, contract, accounts }) {
+function AllEventrender({ treatEv }) {
   const getTimeFormat = (timeCreated) => {
     let day = moment.unix(timeCreated);
     let xy = timeCreated;
@@ -12,22 +10,24 @@ function AllEventrender({ treatEv, contract, accounts }) {
     let time = day.format("MMMM Do, YYYY [at] h:mm A");
     return time;
   };
-  let DeSale = "plotDeSale";
+
+
   return (
     <div className="eventbox">
       {treatEv?.event === "PrescriptionAddedTreat" ||
       treatEv?.event === "ReportAddedTreat" ? (
         <a
-          href={`https://ipfs.io/ipfs/${
+          href={
             treatEv?.returnValues.report || treatEv?.returnValues.prescription
-          }`}
+          }
           target="_blank"
         >
           <img
-            style={{ "max-width": "90%" }}
-            src={`https://ipfs.io/ipfs/${
+            style={{ maxWidth: "90%" }}
+            src={
               treatEv?.returnValues.report || treatEv?.returnValues.prescription
-            }`}
+            }
+            alt="Prescription or Report"
           />
         </a>
       ) : null}

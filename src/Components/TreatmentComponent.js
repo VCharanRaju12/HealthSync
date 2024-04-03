@@ -12,12 +12,23 @@ import {
 } from "reactstrap";
 import "../App.css";
 import { render } from "react-dom";
-const ipfsClient = require("ipfs-http-client");
-const ipfs = ipfsClient.create({
-  host: "ipfs.infura.io",
-  port: 5001,
-  protocol: "https",
-});
+import { initializeApp } from "firebase/app";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAGfxfDVYO6nmw9pMdDnp6HwxkaVJ1d3PQ",
+  authDomain: "charanraju-c0b23.firebaseapp.com",
+  projectId: "charanraju-c0b23",
+  storageBucket: "charanraju-c0b23.appspot.com",
+  messagingSenderId: "368508969483",
+  appId: "1:368508969483:web:7243448e0f701c12a59d0e"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+// Get a reference to the storage service, which is used to create references in your storage bucket
+const storage = getStorage(app);
 
 class TreatmentComp extends Component {
   constructor(props) {
@@ -54,44 +65,49 @@ class TreatmentComp extends Component {
     });
   }
 
-  uploadImage = (x) => {
-    console.log("Time start file to ipfs", Date.now());
-    console.log("Submitting file to ipfs...");
-    //adding file to the IPFS
-    //console.log(this.state.buffer);
-    ipfs
-      .add(this.state.buffer, (error, result) => {
-        console.log("Ipfs result", result);
-        if (error) {
-          console.log("error");
-          console.error(error);
-          return;
-        }
-        console.log("complete");
-        this.setState({ loading: true });
-      })
-      .then((response) => {
-        console.log(response.path);
-        if (x == 1) {
-          const res = this.props.contract.methods
-            .addPrescriptionTreat(this.state.treatId, response.path)
-            .send({ from: this.props.accounts, gas: 1000000 })
-            .on("transactionHash", (hash) => {
-              this.setState({ loading: false });
-              console.log("Time end trans ended", Date.now());
-            });
-        } else if (x == 2) {
-          const res = this.props.contract.methods
-            .addReportTreat(this.state.treatId, response.path)
-            .send({ from: this.props.accounts, gas: 1000000 })
-            .on("transactionHash", (hash) => {
-              this.setState({ loading: false });
-              console.log("Time end trans ended", Date.now());
-            });
-        }
-      });
-    console.log("Time end file uploaded", Date.now());
-  };
+uploadImage = (x) => {
+  console.log("Time start file to Firebase Storage", Date.now());
+  
+  // Reference to the root of the Firebase Storage bucket
+  const storageRef = ref(storage, `images/${Date.now()}_${x}`);
+
+  // Upload the file
+  uploadBytesResumable(storageRef, this.state.buffer).then((snapshot) => {
+    console.log("File uploaded to Firebase Storage");
+    
+    // Get the download URL
+    getDownloadURL(snapshot.ref).then((downloadURL) => {
+      console.log("File available at", downloadURL);
+      
+      // Now you can update your contract with the downloadURL
+      if (x === 1) {
+        // Handle prescription upload
+        const prescriptionPath = downloadURL;
+        this.props.contract.methods
+          .addPrescriptionTreat(this.state.treatId, prescriptionPath)
+          .send({ from: this.props.accounts, gas: 1000000 })
+          .on("transactionHash", (hash) => {
+            this.setState({ loading: false });
+            console.log("Time end trans ended", Date.now());
+          });
+      } else if (x === 2) {
+        // Handle report upload
+        const reportPath = downloadURL;
+        this.props.contract.methods
+          .addReportTreat(this.state.treatId, reportPath)
+          .send({ from: this.props.accounts, gas: 1000000 })
+          .on("transactionHash", (hash) => {
+            this.setState({ loading: false });
+            console.log("Time end trans ended", Date.now());
+          });
+      }
+    });
+  }).catch((error) => {
+    console.error("Error uploading file to Firebase Storage", error);
+  });
+
+  console.log("Time end file uploaded to Firebase Storage", Date.now());
+};
 
   captureFile = (event) => {
     event.preventDefault();
@@ -132,7 +148,7 @@ class TreatmentComp extends Component {
   async handleSubmitmod(event) {
     event.preventDefault();
     var patientstate = 0;
-    if (this.state.patstate == "Recovered") {
+    if (this.state.patstate === "Recovered") {
       patientstate = 1;
     } else {
       patientstate = 2;
