@@ -14,11 +14,11 @@ module.exports = {
     mumbai: {
       provider: () => new HDWalletProvider(
         privateKeys.split(','), // Array of account private keys
-        `https://polygon-mumbai.infura.io/v3/${process.env.INFURA_API_KEY}` // Infura URL for Polygon Mumbai
+        'https://polygon-zkevm-cardona.blockpi.network/v1/rpc/public' // Provided RPC URL for Polygon ZKEVM
       ),
       gas: 5000000,
       gasPrice: 25000000000,
-      network_id: 2442 // Polygon Mumbai testnet network ID
+      network_id: 2442 // Polygon ZKEVM network ID
     }
   },
   contracts_directory: './src/contracts/',
